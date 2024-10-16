@@ -73,9 +73,15 @@ function createFilepathDirIndexMap (dirList: string[], dirFilepathList: string[]
 }
 
 /**
- * @desc 匹配檔案路徑，傳入的需為絕對路徑
+ * @desc 匹配檔案路徑，傳入的需為絕對路徑，該函數會同步更新初始化的檔名索引MAP
  */
-function matchFilepath (filepath: string) {
+function matchFilepath (filepath: string):
+  | 0 // MISS了全部比對
+  | 1 // 完整匹配
+  | 2 // 匹配到目錄但沒匹配到檔案
+  | 3 // 匹配到檔案但權重較原始的低
+  | 4 // 匹配到檔案但權重較原始的高
+{
   for (let i = dirList.length - 1; i >= 0; i--) {
     const dir = dirList[i]
 
@@ -96,26 +102,31 @@ function matchFilepath (filepath: string) {
       if (i < filepathDirIndex) {
         // 已匹配到權重較小
         console.log(relativeFilepath, 'LOW', i, '<', filepathDirIndex)
+        return 3
       } else {
         if (i > filepathDirIndex) {
           // 已匹配但權重較大
           console.log(relativeFilepath, 'UPPER', filepathDirIndex, '->', i)
           filepathDirIndexMap.set(relativeFilepath, i)
+          return 4
         } else {
           // 完整匹配
           console.log(relativeFilepath, 'FULL_MATCH', i)
+          return 1
         }
       }
-      break
     } else {
       // 匹配到目錄但沒匹配到檔案
       console.log(relativeFilepath, 'MATCH_DIR_BUT_NOT_MATCH_FILE', i)
       filepathDirIndexMap.set(relativeFilepath, i)
-      break
+      return 2
     }
   }
+
+  return 0
 }
 
+// 測試語法
 const changeFilepath1 = path.resolve('c/page.tsx')
 const changeFilepath2 = path.resolve('a/hello/page.tsx')
 const changeFilepath3 = path.resolve('a/not-found/page.tsx')
